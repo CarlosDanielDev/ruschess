@@ -3,3 +3,5 @@
 .claude/*
 
 docs/CONTINUATION-PROMPT.md
+
+.DS_Store
