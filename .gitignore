@@ -1,3 +1,5 @@
 /target
 
 .claude/*
+
+docs/CONTINUATION-PROMPT.md
