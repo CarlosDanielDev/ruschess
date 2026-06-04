@@ -119,7 +119,7 @@ the architectural seams needed to swap Stockfish for the Lucidmate API later?
 - First `is_promotion` took `m: Move` (owned) — a predicate should borrow (`&Move`), not consume the caller's value.
 - First `is_promotion` used a full 5-arm `match` for a yes/no — reserved the exhaustive tool for the wrong job; `matches!` is one line.
 - `if *is_capture` needs the `*`: the binding is `&bool`, `if` wants `bool`.
-- Comment bug in `square.rs`: file column comment said `h(8)`; `% 8` yields `0..=7`, so it's `h(7)`. (Code correct, comment wrong — fix.)
+- Comment bug in `square.rs`: file column comment said `h(8)`; `% 8` yields `0..=7`, so it's `h(7)`. (Code was correct, comment wrong — fixed.)
 
 ### Domain-modeling decision
 
