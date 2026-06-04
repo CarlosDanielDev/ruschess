@@ -1,3 +1,8 @@
+use domain::{
+    PieceKind,
+    moves::{CastleSide, describe_move},
+};
+
 fn main() {
     domain::exercises::demo_promote();
     println!("---------------");
@@ -32,4 +37,40 @@ fn main() {
     println!("square 7: {:?}", board.get(7));
     println!("total {:?}: {:?}", domain::Color::White, total_white);
     println!("total {:?}: {:?}", domain::Color::Black, total_black);
+    println!("---------------");
+
+    let square = domain::Square::new(1).unwrap();
+    let square_to = domain::Square::new(2).unwrap();
+
+    let quiet = domain::Move::Quiet {
+        from: square,
+        to: square_to,
+    };
+
+    let capture = domain::Move::Capture {
+        from: square,
+        to: square_to,
+    };
+
+    let castle = domain::Move::Castle {
+        side: CastleSide::KingSide,
+    };
+
+    let en_passant = domain::Move::EnPassant {
+        from: square,
+        to: square_to,
+    };
+
+    let promotion = domain::Move::Promotion {
+        from: square_to,
+        to: square,
+        to_kind: PieceKind::Rook,
+        is_capture: true,
+    };
+
+    println!("quiet: {:?}", describe_move(&quiet));
+    println!("capture: {:?}", describe_move(&capture));
+    println!("castle: {:?}", describe_move(&castle));
+    println!("en passant: {:?}", describe_move(&en_passant));
+    println!("promotion: {:?}", describe_move(&promotion));
 }
