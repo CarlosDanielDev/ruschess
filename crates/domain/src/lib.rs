@@ -1,7 +1,11 @@
 pub mod board;
 pub mod exercises;
+pub mod moves;
+pub mod square;
 
 pub use board::Board;
+pub use moves::Move;
+pub use square::Square;
 
 #[derive(Debug)]
 pub struct Piece {
@@ -40,4 +44,3 @@ pub fn demo() {
 
     println!("{a} {b}");
 }
-
