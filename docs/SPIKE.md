@@ -91,3 +91,51 @@ the architectural seams needed to swap Stockfish for the Lucidmate API later?
 - `crates/domain/src/exercises.rs`: `promote`, `flip_color`, `demo_*` functions. Each broken version preserved as a `//` comment block above its working sibling, with the exact rustc error quoted.
 - `crates/tui/src/main.rs`: wires every demo and runs them.
 - `cargo check --workspace` passes. `cargo run -p tui` prints expected output for promote / flip / board demos.
+
+## Day 2 — Enums with data, pattern matching, Option (2026-06-02 → 2026-06-04)
+
+### Concepts learned
+
+- Enums-with-data = TS discriminated unions, but the variant *is* the tag (no hand-maintained `kind` string field). `Move::Quiet { from, to }`, `Move::Promotion { from, to, to_kind, is_capture }`, etc.
+- `Copy` decided by **what a value owns**, not its size or whether the thing it represents changes over time. `Copy` allowed only when a bitwise (byte-for-byte) duplicate is harmless — i.e. the type owns no resource needing cleanup. `Copy` and `Drop` are mutually exclusive.
+- `Square` newtype `struct Square(u8)` is `Copy` (owns one `u8`, behaves like a TS `number`). `Piece` was deliberately left non-`Copy` in Day 1 to feel moves — it *could* be `Copy`; that was a teaching choice, not a hard limit.
+- Four "pick a variant" tools, each for a different job:
+  - `match` — handle every variant differently (`describe_move`).
+  - `matches!(x, Pat)` — yes/no on one variant; expands to the `if let .. else` bool form (`is_promotion`).
+  - `if let Pat = x { .. }` — peek one variant, optionally grab its fields.
+  - `let Pat = x else { diverge };` — unwrap-or-bail guard clause; `else` must `return`/`panic!`/`break` (`describe_index`).
+- Binding through a `&` reference: in `match m` where `m: &Move`, field bindings come out as references (`is_capture: &bool`). Deref with `*` to get the value; cheap because `bool` is `Copy` (deref-copies the small value out, no move).
+- `{ .. }` in a pattern ignores remaining fields — adding `is_capture` to `Promotion` did NOT break `is_promotion`'s `Move::Promotion { .. }`.
+
+### TS↔Rust analogies that landed
+
+- `Copy` = behaves like a TS `number` (`const b = a` leaves `a` usable); not-`Copy` = behaves like an object that gets *consumed* on pass (the Day 1 move error).
+- `matches!` = `m.kind === "promotion"`.
+- `let else` = the early-return guard clause: `const sq = Square.new(i); if (sq === undefined) return;` then `sq` is known-valid below.
+- enum-with-data = `type Move = { kind:'quiet', ... } | { kind:'castle', ... }`, minus the manual `kind` field.
+
+### Gotchas
+
+- First `is_promotion` took `m: Move` (owned) — a predicate should borrow (`&Move`), not consume the caller's value.
+- First `is_promotion` used a full 5-arm `match` for a yes/no — reserved the exhaustive tool for the wrong job; `matches!` is one line.
+- `if *is_capture` needs the `*`: the binding is `&bool`, `if` wants `bool`.
+- Comment bug in `square.rs`: file column comment said `h(8)`; `% 8` yields `0..=7`, so it's `h(7)`. (Code correct, comment wrong — fix.)
+
+### Domain-modeling decision
+
+- Capturing promotion (e.g. b7xa8=Q) was unrepresentable: `Capture` had no `to_kind`, `Promotion` had no capture info. Chose **Option A** — add `is_capture: bool` to `Promotion` — over folding into shakmaty-style optional fields. Rationale: explicit, own model, no premature complexity (CLAUDE.md: no premature abstraction).
+
+### Docs consulted
+
+- Rust Book §6 Enums & pattern matching — https://doc.rust-lang.org/book/ch06-00-enums.html
+- Rust Book §18 Patterns — https://doc.rust-lang.org/book/ch18-00-patterns.html
+- `std::marker::Copy` (see "When can my type be Copy?" / Copy vs Drop) — https://doc.rust-lang.org/std/marker/trait.Copy.html
+- `let`-else statements — https://doc.rust-lang.org/reference/statements.html#let-statements
+- `matches!` macro — https://doc.rust-lang.org/std/macro.matches.html
+
+### Deliverables
+
+- `crates/domain/src/square.rs`: `Square(u8)` newtype, `Copy`; `new -> Option<Square>` (guards `>= 64`), `index`, `rank`, `file`.
+- `crates/domain/src/moves.rs`: `CastleSide`, `Move` (5 variants incl. `Promotion { .., is_capture }`), `describe_move` (exhaustive), `is_promotion` (`matches!`), `describe_index` (`let else`). Broken versions preserved as comments with exact rustc errors per convention.
+- `crates/domain/src/lib.rs`: declares + re-exports `Square`, `Move`.
+- `cargo check --workspace` clean.
